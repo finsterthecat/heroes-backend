@@ -1,0 +1,19 @@
+logging:
+  file: boot_example.log
+  level:
+    org.hibernate: INFO
+    io.navan: INFO
+
+---
+spring:
+  profiles: test
+  h2:
+    console:
+      enabled: true
+  jpa:
+    hibernate.ddl-auto: create-drop
+logging:
+  file: boot_example.log
+  level:
+    org.hibernate.SQL: DEBUG
+    io.navan: DEBUG

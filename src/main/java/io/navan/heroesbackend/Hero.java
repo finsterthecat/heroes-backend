@@ -7,13 +7,18 @@ import javax.persistence.Id;
  
 @Entity
 public class Hero {
- 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
  
     private String name;
- 
+	
+	public Hero() {}
+	
+	public Hero(String name) {
+		this.name = name;
+	}
+  
     public Long getId() {
         return id;
     }

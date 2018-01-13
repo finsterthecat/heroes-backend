@@ -27,9 +27,15 @@ public class HeroController {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HeroController.class);
 
+	/**
+	 * Create a hero. Returned hero will have the auto-generated id of the new hero.
+	 * 
+	 * @param hero
+	 * @return the created hero
+	 */
 	@PostMapping(consumes = "application/json", produces = "application/json")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Hero createHero(Hero hero) {
+	public Hero createHero(@RequestBody Hero hero) {
 		LOG.debug("createHero: {}", hero.getName());
 		Hero createdHero = heroRepository.save(hero);
 		LOG.debug("Created hero {} with id {}",
@@ -37,6 +43,11 @@ public class HeroController {
 		return createdHero;
 	}
 
+	/**
+	 * Retrieve all heroes
+	 * 
+	 * @return iterable with all heroes
+	 */
 	@GetMapping(produces = "application/json")
 	@ResponseStatus(HttpStatus.OK)
 	public @ResponseBody Iterable<Hero> allHeroes() {
@@ -44,6 +55,12 @@ public class HeroController {
 		return heroRepository.findAll();
 	}
 
+	/**
+	 * Get a hero by id.
+	 * 
+	 * @param id the hero's id
+	 * @return the hero
+	 */
 	@GetMapping(value = "/{id}", produces = "application/json")
 	@ResponseStatus(HttpStatus.OK)
 	public @ResponseBody Hero singleHero(@PathVariable Long id) {
@@ -55,10 +72,18 @@ public class HeroController {
 		return hero;
 	}
 
+	/**
+	 * Update a hero. Hero must exist for id.
+	 * 
+	 * @param id The id of the hero to update
+	 * @param hero The hero value
+	 * @throws ResourceNotFoundException if not found.
+	 */
 	@PutMapping(value = "/{id}", consumes = "application/json",
 			produces = "application/json")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void updateHero(@PathVariable Long id, @RequestBody Hero hero) {
+		//Retrieve hero first. This is the only way to ensure hero already exists prior to saving.
 		Hero currentHero = heroRepository.findOne(id);
 		if (currentHero == null) {
 			throw new ResourceNotFoundException("Hero is not found for id=" + id);
@@ -66,9 +91,14 @@ public class HeroController {
 		LOG.debug("updateHero: modified name from {} to {}",
 				currentHero.getName(), hero.getName());
 		currentHero.setName(hero.getName());
-		//this.heroRepository.save(currentHero);
+		this.heroRepository.save(currentHero);
 	}
 	
+	/**
+	 * Delete hero
+	 * @param id
+	 * @throws ResourceNotFoundException if not found.
+	 */
     @DeleteMapping(value = "/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
 	public void deleteHero(@PathVariable Long id) {
@@ -81,6 +111,11 @@ public class HeroController {
 		}
 	}
     
+    /**
+     * Find hero with name containing string (not case sensitive)
+     * @param name The string to search for.
+     * @return Iterable with heroes with matching names.
+     */
     @GetMapping(value = "/search/name", produces = "application/json")
     @ResponseStatus(HttpStatus.OK)
     public Iterable<Hero> findByName(@RequestParam("contains") String name) {

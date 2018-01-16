@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -28,6 +29,8 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.navan.system.ApiError;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -87,22 +90,34 @@ public class HeroesBackendApplicationTests {
 	 * @throws Exception
 	 */
 	@Test
-	public void shouldGetSuperhero() throws Exception {
-		Hero[] heroes = getAllHeroes();
-		assertThat(heroes.length).isEqualTo(1);
-		
-		invokeGetHero(heroes[0].getId())
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.name", is("Superman")));
+	public void shouldGetSuperheroErrorIfBadId() throws Exception {
+	    mvc.perform(get(BASE_URL + "xxx")
+            .accept(MediaType.APPLICATION_JSON))
+			.andExpect(status().isBadRequest());
 	}
 
-	/**
+    /**
+     * Should get a Superhero by id.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void shouldGetSuperhero() throws Exception {
+        Hero[] heroes = getAllHeroes();
+        assertThat(heroes.length).isEqualTo(1);
+        
+        invokeGetHero(heroes[0].getId())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name", is("Superman")));
+    }
+
+    /**
 	 * Should get a HTTP Status 404 when Get Superhero by id is not found.
 	 * 
 	 * @throws Exception
 	 */
 	@Test
-	public void shouldGet404ForNotfoundSuperhero() throws Exception {
+	public void should404ForNotfoundSuperhero() throws Exception {
 		Hero[] heroes = getAllHeroes();
 		assertThat(heroes.length).isEqualTo(1);
 		
@@ -131,28 +146,76 @@ public class HeroesBackendApplicationTests {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.name", is(heroName)));
 	}
-	
-	/**
-	 * Create and then update a Hero and retrieve to make sure the update was applied.
-	 * 
-	 * @throws Exception
-	 */
-	@Test
-	public void shouldUpdateSuperhero() throws Exception {
-		byte[] heroJson = toJson(new Hero("Company Man"));
-		MvcResult results = invokeCreateHero(heroJson)
-				.andExpect(status().isCreated())
-				.andReturn();
-		Hero hero = fromJsonResult(results, Hero.class);
 
-		final String newName = "Salary Man";
-		invokeUpdateHero(hero.getId(), toJson(new Hero(newName)))
-			.andExpect(status().isNoContent());
+	@Test
+    public void shouldBadRequestCreateSuperheroWithMissingName() throws Exception {
+	    LOG.debug("CreateMissingName");
+        MvcResult results;
+        byte[] nullHeroJson = toJson(new Hero(null));
+		results = invokeCreateHero(nullHeroJson)
+		        .andExpect(status().isBadRequest())
+		        .andReturn();
 		
-		invokeGetHero(hero.getId())
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.name", is(newName)));
-	}
+        checkMissingNameErrorResponse(results);
+    }
+    
+    /**
+     * Create and then update a Hero and retrieve to make sure the update was applied.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void shouldUpdateSuperhero() throws Exception {
+        byte[] heroJson = toJson(new Hero("Company Man"));
+        MvcResult results = invokeCreateHero(heroJson)
+                .andExpect(status().isCreated())
+                .andReturn();
+        Hero hero = fromJsonResult(results, Hero.class);
+
+        final String newName = "Salary Man";
+        invokeUpdateHero(hero.getId(), toJson(new Hero(newName)))
+            .andExpect(status().isNoContent());
+        
+        invokeGetHero(hero.getId())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name", is(newName)));
+    }
+    
+    /**
+     * Create and then update a Hero and retrieve to make sure the update was applied.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void shouldBadRequestUpdateSuperheroWithMissingName() throws Exception {
+        byte[] heroJson = toJson(new Hero("Company Man"));
+        MvcResult results = invokeCreateHero(heroJson)
+                .andExpect(status().isCreated())
+                .andReturn();
+        Hero hero = fromJsonResult(results, Hero.class);
+
+        final String newName = null;
+        results = invokeUpdateHero(hero.getId(), toJson(new Hero(newName)))
+                .andExpect(status().isBadRequest())
+                .andReturn();
+        
+        checkMissingNameErrorResponse(results);
+
+    }
+
+
+    private void checkMissingNameErrorResponse(MvcResult results) throws Exception {
+        ApiError apiError = fromJsonResult(results, ApiError.class);
+        assertThat(apiError.getStatus()).isIn(HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(apiError.getErrors().size()).isEqualTo(1);
+        
+        ApiError.Error error = apiError.getErrors().get(0);
+        assertThat(error.getEntity()).isEqualTo("io.navan.heroesbackend.Hero");
+        assertThat(error.getProperty()).isEqualTo("name");
+        assertThat(error.getMessage()).isEqualToIgnoringCase("name is required");            
+        
+        LOG.debug("ApiError\n" + apiError.toString());
+    }
 	
 	/**
 	 * Updating a hero for an id that does not exist in database should return 404 not found.

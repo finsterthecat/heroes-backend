@@ -18,8 +18,15 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+
 @RestController
 @RequestMapping(value = "heroes")
+@Api(tags= {"heroes"})
 public class HeroController {
 
     @Autowired
@@ -35,6 +42,7 @@ public class HeroController {
      */
     @PostMapping(consumes = "application/json", produces = "application/json")
     @ResponseStatus(HttpStatus.CREATED)
+    @ApiOperation(value = "Create a hero resource.", notes = "Returns the new Hero in the response.")
     public Hero createHero(@RequestBody Hero hero) {
         LOG.debug("createHero: {}", hero.getName());
         Hero createdHero = heroRepository.save(hero);
@@ -49,6 +57,7 @@ public class HeroController {
      */
     @GetMapping(produces = "application/json")
     @ResponseStatus(HttpStatus.OK)
+    @ApiOperation(value = "Get all heroes.", notes = "List of all heroes.")
     public @ResponseBody Iterable<Hero> allHeroes() {
         LOG.debug("allHeroes");
         return heroRepository.findAll();
@@ -61,13 +70,18 @@ public class HeroController {
      *            the hero's id
      * @return the hero
      */
-    @GetMapping(value = "/{id}", produces = "application/json")
+    @GetMapping(value = "/{id:\\d+}", produces = "application/json")
     @ResponseStatus(HttpStatus.OK)
-    public @ResponseBody Hero singleHero(@PathVariable Long id) {
+    @ApiOperation(value = "Get a single hero.", notes = "By ID.")
+    @ApiResponses(value = {
+            @ApiResponse(code=404, message="Hero not found.")
+    })
+    public @ResponseBody Hero singleHero(
+            @ApiParam(value = "The ID of the hero.", required = true) @PathVariable Long id) {
         LOG.debug("singleHero for id {}", id);
         Hero hero = heroRepository.findOne(id);
         if (hero == null) {
-            throw new ResourceNotFoundException("Hero not found for id: " + id);
+            throw new ResourceNotFoundException("Hero not found");
         }
         return hero;
     }
@@ -82,14 +96,22 @@ public class HeroController {
      * @throws ResourceNotFoundException
      *             if not found.
      */
-    @PutMapping(value = "/{id}", consumes = "application/json", produces = "application/json")
+    @PutMapping(value = "/{id:\\d+}", consumes = "application/json", produces = "application/json")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updateHero(@PathVariable Long id, @RequestBody Hero hero) {
+    @ApiOperation(value = "Update an existing hero resource.",
+            notes = "Hero for passed in id.")
+    @ApiResponses(value = {
+        @ApiResponse(code=400, message="Validation Errors"),
+        @ApiResponse(code=404, message="Hero not found")
+    })
+    public void updateHero(
+            @ApiParam(value = "The ID of the hero resource", required = true) @PathVariable Long id,
+            @RequestBody Hero hero) {
         // Retrieve hero first. This is the only way to ensure hero already exists prior
         // to saving.
         Hero currentHero = heroRepository.findOne(id);
         if (currentHero == null) {
-            throw new ResourceNotFoundException("Hero is not found for id=" + id);
+            throw new ResourceNotFoundException("Hero not found");
         }
         LOG.debug("updateHero: modified name from {} to {}", currentHero.getName(), hero.getName());
         currentHero.setName(hero.getName());
@@ -103,14 +125,20 @@ public class HeroController {
      * @throws ResourceNotFoundException
      *             if not found.
      */
-    @DeleteMapping(value = "/{id}")
+    @ApiOperation(value = "Delete a hero resource.",
+            notes = "Delete hero with id.")
+    @ApiResponses(value = {
+        @ApiResponse(code=404, message="Not Found")
+    })
+    @DeleteMapping(value = "/{id:\\d+}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteHero(@PathVariable Long id) {
+    public void deleteHero(
+            @ApiParam(value = "The ID of the hero resource", required = true) @PathVariable Long id) {
         LOG.debug("delete >{}<", id);
         try {
             heroRepository.delete(id);
         } catch (EmptyResultDataAccessException e1) {
-            throw new ResourceNotFoundException("Cannot delete Hero with id " + id + ". Not found", e1);
+            throw new ResourceNotFoundException("Hero not found");
         }
     }
 
@@ -123,7 +151,10 @@ public class HeroController {
      */
     @GetMapping(value = "/search/name", produces = "application/json")
     @ResponseStatus(HttpStatus.OK)
-    public Iterable<Hero> findByName(@RequestParam("contains") String name) {
+    @ApiOperation(value = "Find hero resources by name.")
+    public Iterable<Hero> findByName(
+            @ApiParam(value = "Search for heroes with name containing")
+            @RequestParam("contains") String name) {
         LOG.debug("findByName >{}<", name);
         return heroRepository.findByName(name);
     }

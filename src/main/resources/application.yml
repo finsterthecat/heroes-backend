@@ -3,6 +3,8 @@ logging:
   level:
     org.hibernate: INFO
     io.navan: INFO
+    io.navan.system: DEBUG
+    
 
 ---
 spring:

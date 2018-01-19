@@ -4,15 +4,20 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
  
 @Entity
+@Table(uniqueConstraints = {@UniqueConstraint(columnNames= "name")})
 public class Hero {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
  
     @NotNull(message = "Name is required")
+    @Size(min = 1, max=20, message = "Name must be between 1 and 20 characters long")
     private String name;
 	
 	public Hero() {}

@@ -5,28 +5,41 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 
-public class ApiError {
+/**
+ * ApiError returned by RESTful calls on error conditions.
+ * 
+ * @author tonybrouwer
+ *
+ */
+public class ValidationError {
     
-    private HttpStatus status;
+    private HttpStatus httpStatus;
     private String message;
     private List<Error> errors;
  
-    public ApiError() {};
+    public ValidationError() {};
     
-    public ApiError(HttpStatus status, String message, List<Error> errors) {
+    public ValidationError(HttpStatus httpStatus, String message, List<Error> errors) {
         super();
-        this.setStatus(status);
+        this.setHttpStatus(httpStatus);
         this.setMessage(message);
         this.setErrors(errors);
     }
  
-    public ApiError(HttpStatus status, String message, Error error) {
+    public ValidationError(HttpStatus httpStatus, String message, Error error) {
         super();
-        this.setStatus(status);
+        this.setHttpStatus(httpStatus);
         this.setMessage(message);
         setErrors(Arrays.asList(error));
     }
 
+    /**
+     * Holds the sub-errors that together are delivered for an ApiError. Used mainly for validation errors
+     * so that we can return a myriad of errors, one for each property, as necessary.
+     * 
+     * @author tonybrouwer
+     *
+     */
     public static class Error {
         public String getEntity() {
             return entity;
@@ -52,9 +65,9 @@ public class ApiError {
             this.message = message;
         }
 
-        private String entity;
-        private String property;
-        private String message;
+        private String entity;      // The entity
+        private String property;    // The property of the entity
+        private String message;     // The error message
         
         public Error() {}
         
@@ -70,12 +83,12 @@ public class ApiError {
         }
     }
     
-    public HttpStatus getStatus() {
-        return status;
+    public HttpStatus getHttpStatus() {
+        return httpStatus;
     }
 
-    public void setStatus(HttpStatus status) {
-        this.status = status;
+    public void setHttpStatus(HttpStatus httpStatus) {
+        this.httpStatus = httpStatus;
     }
 
     public String getMessage() {
@@ -96,15 +109,12 @@ public class ApiError {
     
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder(String.format("{\nstatus: %s,\nmessage: %s,\nerrors: [", this.getStatus(), this.getMessage()));
-        boolean first = true;
-        for (ApiError.Error e: this.getErrors()) {
-            if (!first) {
-                sb.append(", ");
-            }
-            sb.append("\n\t" + e.toString());
-            first = false;
-        }
+        StringBuilder sb = new StringBuilder(String.format("{\nstatus: %d,\nmessage: %s,\nerrors:\t[",
+                this.getHttpStatus().value(), this.getMessage()));
+        sb.append(
+                String.join(",\n", errors.stream()
+                .map(Error::toString)
+                .toArray(size -> new String[size])));
         sb.append("\n\t]\n}");
         return sb.toString();
     }

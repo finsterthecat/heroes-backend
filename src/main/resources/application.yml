@@ -2,7 +2,7 @@ logging:
   file: boot_example.log
   level:
     org.hibernate: INFO
-    io.navan: INFO
+    io.navan: DEBUG
     io.navan.system: DEBUG
     
 

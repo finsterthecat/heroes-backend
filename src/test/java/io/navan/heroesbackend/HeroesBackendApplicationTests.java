@@ -73,8 +73,11 @@ public class HeroesBackendApplicationTests {
      */
     @Test
     public void shouldStartWithOneSuperheroSuperman() throws Exception {
-        MvcResult result = invokeAllHeroes().andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].name", is("Superman"))).andReturn();
+        MvcResult result = invokeAllHeroes()
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].name", is("Superman")))
+                .andReturn();
 
         Hero[] heroes = fromJsonResult(result, Hero[].class);
         LOG.debug("Superman's id: {}", heroes[0].getId());
@@ -91,8 +94,8 @@ public class HeroesBackendApplicationTests {
         assertThat(heroes.length).isEqualTo(1);
 
         invokeGetHero(heroes[0].getId())
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.name", is("Superman")));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name", is("Superman")));
     }
 
     /**
@@ -117,7 +120,7 @@ public class HeroesBackendApplicationTests {
                 .content(toJson(new Hero("Stupor Man")))
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound());
     }
 
     /**
@@ -133,7 +136,7 @@ public class HeroesBackendApplicationTests {
         // Only one superhero, so its id plus 1 must not exist...
 
         invokeGetHero(heroes[0].getId() + 1)
-            .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound());
     }
 
     /**
@@ -145,11 +148,15 @@ public class HeroesBackendApplicationTests {
     public void shouldCreateSuperhero() throws Exception {
         String heroName = "Company Man";
         byte[] heroJson = toJson(new Hero(heroName));
-        MvcResult results = invokeCreateHero(heroJson).andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name", is(heroName))).andReturn();
+        MvcResult results = invokeCreateHero(heroJson)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name", is(heroName)))
+                .andReturn();
         Hero hero = fromJsonResult(results, Hero.class);
 
-        invokeGetHero(hero.getId()).andExpect(status().isOk()).andExpect(jsonPath("$.name", is(heroName)));
+        invokeGetHero(hero.getId())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name", is(heroName)));
     }
 
     /**
@@ -179,7 +186,9 @@ public class HeroesBackendApplicationTests {
         byte[] nullHeroJson = toJson(new Hero(null));
         results = invokeCreateHero(nullHeroJson).andExpect(status().isBadRequest()).andReturn();
         checkInvalidNameErrorResponse(results, "name is required");
-        results = invokeCreateHero(toJson(new Hero(""))).andExpect(status().isBadRequest()).andReturn();
+        results = invokeCreateHero(toJson(new Hero("")))
+                .andExpect(status().isBadRequest())
+                .andReturn();
         checkInvalidNameErrorResponse(results, "name must be between 1 and 20 characters long");
     }
 
@@ -192,18 +201,21 @@ public class HeroesBackendApplicationTests {
     @Test
     public void shouldUpdateSuperhero() throws Exception {
         byte[] heroJson = toJson(new Hero("Company Man"));
-        MvcResult results = invokeCreateHero(heroJson).andExpect(status().isCreated()).andReturn();
+        MvcResult results = invokeCreateHero(heroJson)
+                .andExpect(status().isCreated())
+                .andReturn();
         Hero hero = fromJsonResult(results, Hero.class);
 
         final String newName = "Salary Man";
         invokeUpdateHero(hero.getId(), toJson(new Hero(newName))).andExpect(status().isNoContent());
 
-        invokeGetHero(hero.getId()).andExpect(status().isOk()).andExpect(jsonPath("$.name", is(newName)));
+        invokeGetHero(hero.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.name", is(newName)));
     }
 
     /**
-     * Expect a bad request with error "Already Exists" if update a superhero to name that already exists.
-     * applied.
+     * Expect a bad request with error "Already Exists" if update a superhero to
+     * name that already exists. applied.
      * 
      * @throws Exception
      */
@@ -215,11 +227,12 @@ public class HeroesBackendApplicationTests {
 
         final String newName = "Superman";
         invokeUpdateHero(hero.getId(), toJson(new Hero(newName)))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.errors", hasSize(1)))
-            .andExpect(jsonPath("$.errors[0].entity", is(Hero.class.getName())))
-            .andExpect(jsonPath("$.errors[0].property", is("name")))
-            .andExpect(jsonPath("$.errors[0].message", is("Already Exists")));;
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors", hasSize(1)))
+                .andExpect(jsonPath("$.errors[0].entity", is(Hero.class.getName())))
+                .andExpect(jsonPath("$.errors[0].property", is("name")))
+                .andExpect(jsonPath("$.errors[0].message", is("Already Exists")));
+        ;
     }
 
     /**
@@ -235,18 +248,21 @@ public class HeroesBackendApplicationTests {
         Hero hero = fromJsonResult(results, Hero.class);
 
         final String newName = null;
-        results = invokeUpdateHero(hero.getId(), toJson(new Hero(newName))).andExpect(status().isBadRequest())
+        results = invokeUpdateHero(hero.getId(), toJson(new Hero(newName)))
+                .andExpect(status().isBadRequest())
                 .andReturn();
         checkInvalidNameErrorResponse(results, "name is required");
-        
-        results = invokeUpdateHero(hero.getId(), toJson(new Hero(""))).andExpect(status().isBadRequest()).andReturn();
+
+        results = invokeUpdateHero(hero.getId(), toJson(new Hero("")))
+                .andExpect(status().isBadRequest()).andReturn();
         checkInvalidNameErrorResponse(results, "name must be between 1 and 20 characters long");
 
     }
 
     private void checkInvalidNameErrorResponse(MvcResult results, String msg) throws Exception {
         ValidationError apiError = fromJsonResult(results, ValidationError.class);
-        assertThat(apiError.getHttpStatus()).isIn(HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(apiError.getHttpStatus()).isIn(HttpStatus.BAD_REQUEST,
+                HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(apiError.getErrors().size()).isEqualTo(1);
 
         ValidationError.Error error = apiError.getErrors().get(0);
@@ -270,7 +286,8 @@ public class HeroesBackendApplicationTests {
 
         // Only one superhero, so its id plus 1 must not exist...
 
-        invokeUpdateHero(heroes[0].getId() + 1, toJson(new Hero("test"))).andExpect(status().isNotFound());
+        invokeUpdateHero(heroes[0].getId() + 1, toJson(new Hero("test")))
+                .andExpect(status().isNotFound());
     }
 
     /**
@@ -312,6 +329,7 @@ public class HeroesBackendApplicationTests {
 
         invokeDeleteHero(heroes[0].getId() + 1).andExpect(status().isNotFound());
     }
+
     /**
      * Should get an internal server error when delete Superhero by non-numeric id.
      * 
@@ -328,30 +346,26 @@ public class HeroesBackendApplicationTests {
      * @throws Exception
      */
     @Test
-    public void shouldSearchSuperheros() throws Exception {
-        String[] heroes = new String[] { "Supergirl", "Company Man", "Cat Lady", "Cat Girl", "Silly Putty Man" };
+    public void shouldSearchSuperheroes() throws Exception {
+        String[] heroes = new String[] { "Supergirl", "Company Man", "Cat Lady", "Cat Girl",
+                "Silly Putty Man" };
         for (String hero : heroes) {
             invokeCreateHero(toJson(new Hero(hero)));
         }
 
-        invokeSearchHeroes("girl").andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(2)))
+        invokeSearchHeroes("girl")
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].name", containsInAnyOrder("Cat Girl", "Supergirl")));
-        invokeSearchHeroes("man").andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(3)))
-                .andExpect(jsonPath("$[*].name", containsInAnyOrder("Superman", "Company Man", "Silly Putty Man")));
-        invokeSearchHeroes("captain").andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));
-        invokeSearchHeroes("CAT").andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(2)))
+        invokeSearchHeroes("man")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].name",
+                        containsInAnyOrder("Superman", "Company Man", "Silly Putty Man")));
+        invokeSearchHeroes("cat")
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$[*].name", containsInAnyOrder("Cat Girl", "Cat Lady")));
-    }
-
-    /**
-     * Should search by name return empty list and status OK when no matches found.
-     * 
-     * 
-     * @throws Exception
-     */
-    @Test
-    public void shouldEmptyListSearchNotFoundSuperheros() throws Exception {
-        invokeSearchHeroes("cthulhu").andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));
+        invokeSearchHeroes("cthulhu")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
     }
 
     /*
@@ -406,7 +420,7 @@ public class HeroesBackendApplicationTests {
     }
 
     private ResultActions invokeSearchHeroes(String term) throws Exception {
-        return mvc.perform(get(BASE_URL + "search/name?contains=" + term).accept(MediaType.APPLICATION_JSON));
+        return mvc.perform(get(BASE_URL + "?name=" + term).accept(MediaType.APPLICATION_JSON));
     }
 
     private ResultActions invokeGetHero(Long id) throws Exception {
@@ -419,8 +433,9 @@ public class HeroesBackendApplicationTests {
     }
 
     private ResultActions invokeUpdateHero(Long id, byte[] heroJson) throws Exception {
-        return mvc.perform(put(BASE_URL + id).content(heroJson).contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON));
+        return mvc.perform(
+                put(BASE_URL + id).content(heroJson).contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON));
     }
 
     private ResultActions invokeDeleteHero(Long id) throws Exception {

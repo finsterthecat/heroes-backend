@@ -2,6 +2,7 @@ package io.navan.system;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.persistence.RollbackException;
 import javax.validation.ConstraintViolation;
@@ -28,13 +29,18 @@ public class ControllerExceptionHandler {
     
     private static final Logger LOG = LoggerFactory.getLogger(ControllerExceptionHandler.class);
     
+    private static Pattern heroTableNamePattern; 
+    static {
+        heroTableNamePattern = Pattern.compile("ON PUBLIC\\.HERO\\(NAME\\)");
+    }
+    
     /**
      * ConstraintViolations are raised when Entity validation annotations get violated. Capture all the
      * validation errors in ApiError and raise HTTP error BAD_REQUEST.
      * 
      * @param ex The exception
      * @param request The Web Request
-     * @return ResponseEntity<ApiError> that will get returned in the response content
+     * @return ResponseEntity
      */
     @ExceptionHandler({ ConstraintViolationException.class })
     public ResponseEntity<ValidationError> handleConstraintViolation(
@@ -46,35 +52,46 @@ public class ControllerExceptionHandler {
                     violation.getMessage()));
         }
 
-        ValidationError apiError = new ValidationError(HttpStatus.BAD_REQUEST, "Validation Errors", errors);
-        return new ResponseEntity<ValidationError>(apiError, new HttpHeaders(), apiError.getHttpStatus());
+        ValidationError apiError = new ValidationError(HttpStatus.BAD_REQUEST,
+                "Validation Errors", errors);
+        return new ResponseEntity<ValidationError>(apiError, new HttpHeaders(),
+                apiError.getHttpStatus());
     }
     
     /**
-     * Handle a DataIntegrityViolationException, most likely a 23505 sqlstate representing a resource already exists.
+     * Handle a DataIntegrityViolationException, most likely a 23505 sqlstate
+     * representing a resource already exists.
+     * If sqlstate is 23505 then HTTP Status is BAD_REQUEST.
+     * If sqlstate is not 23505 then HTTP Status will be INTERNAL_SERVER_ERROR.
+     * 
      * @param ex The DataIntegrityViolationException
-     * @param request
-     * @return
+     * @param request The request
+     * @return ResponseEntity
      */
     @ExceptionHandler({ DataIntegrityViolationException.class })
-    public ResponseEntity<ValidationError> handleConstraintViolation(
+    public ResponseEntity<ValidationError> handleDataIntegrityViolation(
             DataIntegrityViolationException ex, WebRequest request) {
-        LOG.debug("DataIntegrityViolation: " + ex.getLocalizedMessage(), ex);
+        //LOG.debug("DataIntegrityViolation: " + ex.getLocalizedMessage(), ex);
         if (ex.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
             org.hibernate.exception.ConstraintViolationException cve =
                     (org.hibernate.exception.ConstraintViolationException)ex.getCause();
             String sqlstate = cve.getSQLState();
 
             if (sqlstate.equals("23505")) { //23505 is a unique key violation
+                boolean isFoundHeroTableNameInMessage = heroTableNamePattern
+                        .matcher(cve.getConstraintName()).find();
                 ValidationError apiError = new ValidationError(HttpStatus.BAD_REQUEST,
                         cve.getSQLException().getMessage(),
-                        new ValidationError.Error(Hero.class.getName(), "name", "Already Exists"));
+                        new ValidationError.Error(
+                                isFoundHeroTableNameInMessage ?
+                                Hero.class.getName() : "unknown.class", "name", "Already Exists"));
                 return new ResponseEntity<ValidationError>(apiError,
                         new HttpHeaders(),
                         apiError.getHttpStatus());            
-            } else {
+            } else {    //not 23505? then I don't know why this happened and thus this an internal server error
                 ValidationError apiError = new ValidationError(HttpStatus.INTERNAL_SERVER_ERROR,
-                        "Unexpected SQLState: " + sqlstate + ".\n" + cve.getMessage(),
+                        "Unexpected SQLState: " + sqlstate + ".\n" +
+                                cve.getSQLException().getMessage(),
                         new ArrayList<>());
                 return new ResponseEntity<ValidationError>(apiError,
                         new HttpHeaders(),
@@ -92,9 +109,9 @@ public class ControllerExceptionHandler {
 
     /**
      * Resource not found exception gets mapped to Http NOT_FOUND
-     * @param ex
-     * @param request
-     * @return
+     * @param ex The exception
+     * @param request The request
+     * @return ResponseEntity
      */
     @ExceptionHandler({ ResourceNotFoundException.class })
     public ResponseEntity<ValidationError> handleResourceNotFoundException(
@@ -108,9 +125,9 @@ public class ControllerExceptionHandler {
      * Fall through to handle all the other expected errors.
      * Tries to dig out the Constraint Violation exceptions that are sometimes
      * buried beneath TransactionSystemException, RollbackException, or NestedServletException.
-     * @param ex
-     * @param request
-     * @return
+     * @param ex The exception
+     * @param request The request
+     * @return ResponseEntity
      */
     @ExceptionHandler({ Exception.class })
     public ResponseEntity<ValidationError> handleAll(Exception ex, WebRequest request) {

@@ -1,9 +1,7 @@
 package io.navan.heroesbackend;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -99,24 +97,24 @@ public class HeroesBackendApplicationTests {
     }
 
     /**
-     * Should get an internal server error when get Superhero by non-numeric id.
+     * Should get a 404 (since doesn't match regex) when get Superhero by non-numeric id.
      * 
      * @throws Exception
      */
     @Test
-    public void shouldNotFoundGetSuperheroWithBadId() throws Exception {
+    public void should404GetSuperheroWithBadId() throws Exception {
         mvc.perform(get(BASE_URL + "xxx").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
 
     /**
-     * Should get an internal server error when update Superhero by non-numeric id.
+     * Should get not found when update Superhero by non-existent id.
      * 
      * @throws Exception
      */
     @Test
-    public void shouldNotFoundUpdateSuperheroWithBadId() throws Exception {
-        mvc.perform(put(BASE_URL + "xxx")
+    public void should404UpdateSuperheroWithNotFoundId() throws Exception {
+        mvc.perform(put(BASE_URL + "1000001")
                 .content(toJson(new Hero("Stupor Man")))
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON))
@@ -160,7 +158,7 @@ public class HeroesBackendApplicationTests {
     }
 
     /**
-     * Create Superhero will return the created superhero.
+     * Creating the same Superhero twice will result in a bad request.
      * 
      * @throws Exception
      */
@@ -215,7 +213,7 @@ public class HeroesBackendApplicationTests {
 
     /**
      * Expect a bad request with error "Already Exists" if update a superhero to
-     * name that already exists. applied.
+     * name that already exists.
      * 
      * @throws Exception
      */
@@ -331,7 +329,7 @@ public class HeroesBackendApplicationTests {
     }
 
     /**
-     * Should get an internal server error when delete Superhero by non-numeric id.
+     * Should get an 404 error when delete Superhero by non-numeric id since does not match known resource.
      * 
      * @throws Exception
      */

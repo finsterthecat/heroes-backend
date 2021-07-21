@@ -15,7 +15,7 @@ import io.swagger.annotations.ApiModelProperty;
 @Table(uniqueConstraints = {@UniqueConstraint(columnNames= "name")})
 public class Hero {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @ApiModelProperty(notes = "The database generated Hero ID")
     private Long id;
  

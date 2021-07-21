@@ -1,5 +1,7 @@
 package io.navan.heroesbackend;
 
+import java.util.Optional;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -97,11 +99,11 @@ public class HeroController {
             @ApiParam(value = "The ID of the hero.", required = true)
             @PathVariable Long id) {
         LOG.debug("singleHero for id {}", id);
-        Hero hero = heroRepository.findOne(id);
-        if (hero == null) {
+        Optional<Hero> hero = heroRepository.findById(id);
+        if (hero.isEmpty()) {
             throw new ResourceNotFoundException("Hero not found");
         }
-        return hero;
+        return hero.get();
     }
 
     /**
@@ -130,14 +132,14 @@ public class HeroController {
             @RequestBody Hero hero) {
         // Retrieve hero first. This is the only way to ensure hero already exists prior
         // to saving.
-        Hero currentHero = heroRepository.findOne(id);
-        if (currentHero == null) {
+        Optional<Hero> currentHero = heroRepository.findById(id);
+        if (currentHero.isEmpty()) {
             throw new ResourceNotFoundException("Hero not found");
         }
         LOG.debug("updateHero: modified name from {} to {}",
-                currentHero.getName(), hero.getName());
-        currentHero.setName(hero.getName());
-        this.heroRepository.save(currentHero);
+                currentHero.get().getName(), hero.getName());
+        currentHero.get().setName(hero.getName());
+        this.heroRepository.save(currentHero.get());
     }
 
     /**
@@ -159,7 +161,7 @@ public class HeroController {
             @PathVariable Long id) {
         LOG.debug("delete >{}<", id);
         try {
-            heroRepository.delete(id);
+            heroRepository.deleteById(id);
         } catch (EmptyResultDataAccessException e1) {
             throw new ResourceNotFoundException("Hero not found");
         }

@@ -1,21 +1,13 @@
 logging:
-  file: boot_example.log
+  file: heroesbackend.log
   level:
     org.hibernate: INFO
     io.navan: DEBUG
-    io.navan.system: DEBUG
-    
-
----
 spring:
-  profiles: test
   h2:
     console:
       enabled: true
   jpa:
-    hibernate.ddl-auto: create-drop
-logging:
-  file: boot_example.log
-  level:
-    org.hibernate.SQL: DEBUG
-    io.navan: DEBUG
+    show-sql: true
+    hibernate:
+      ddl-auto: validate

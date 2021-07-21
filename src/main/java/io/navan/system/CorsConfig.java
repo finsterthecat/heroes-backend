@@ -1,4 +1,4 @@
-package io.navan.heroesbackend;
+package io.navan.system;
 
 import java.util.Arrays;
 

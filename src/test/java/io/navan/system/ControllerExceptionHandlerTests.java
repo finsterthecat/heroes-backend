@@ -1,13 +1,13 @@
 package io.navan.system;
 
-import static org.junit.Assert.*;
-
 import java.sql.SQLException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+
 import static org.hamcrest.Matchers.hasSize;
 import org.hibernate.exception.ConstraintViolationException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
